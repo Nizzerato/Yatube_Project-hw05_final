@@ -9,7 +9,7 @@ SECRET_KEY = 'oz(k-(++=@zc*ryh@0kws!)#-p)z2)c@g_$wk#0^_fkwm(z*r4'
 
 DEBUG = True
 
-CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
+CSRF_FAILURE_VIEW = 'core.views.permission_denied_view'
 
 ALLOWED_HOSTS = [
     'testserver',
