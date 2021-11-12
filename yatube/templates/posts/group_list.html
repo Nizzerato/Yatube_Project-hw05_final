@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load thumbnail %}
+{% block title %}Записи группы {{ group.title }}{% endblock %}
+{% block header %}{{ group.title }}{% endblock %}
+{% block content %}
+  <div class="container">
+    <p>{{ group.description|linebreaksbr }}</p>
+    {% for post in page_obj %}
+      {% include 'includes/post_list.html' %}
+      {% if not forloop.last %}<hr>{% endif %}
+    {% endfor %}
+    {% include 'includes/paginator.html' %}
+  </div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load thumbnail %}
+{% block title %} Последние записи избранных авторов{% endblock %}
+{% block content %}
+  <div class="container">
+    {% include 'includes/switcher.html' with follow=True %}
+    <h1>Последние записи избранных авторов на сайте</h1>
+    {% if not page_obj %}
+      <h2>Нет записей</h2>
+      <p>Подпишитесь на интересных вам авторов чтобы следить за их новыми записями на этой странице.</p>
+    {% endif %}
+    {% for post in page_obj %}
+      {% include 'includes/post_list.html' with post=post %}
+      {% if not forloop.last %}<hr>{% endif %}
+    {% endfor %}
+    {% include 'includes/paginator.html' %}
+  </div>
+{% endblock %}
