@@ -54,7 +54,6 @@ class Post(PubDateModel):
 
     class Meta:
         ordering = ('-pub_date',)
-        default_related_name = 'posts'
         verbose_name = 'Пост'
         verbose_name_plural = 'Посты'
 
@@ -81,7 +80,6 @@ class Comment(PubDateModel):
 
     class Meta:
         ordering = ('pub_date',)
-        default_related_name = 'comments'
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
         get_latest_by = 'pub_date'

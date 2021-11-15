@@ -14,7 +14,6 @@ TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 HOMEPAGE_URL = reverse('posts:main_page')
 CREATE_POST_URL = reverse('posts:post_create')
 LOGIN_URL = reverse('users:login')
-SIGNUP_URL = reverse('users:signup')
 FOLLOW_INDEX_URL = reverse('posts:follow_index')
 
 UNEXPECTED_URL = '/unexpected_url/'
@@ -27,7 +26,6 @@ GROUP_URL = reverse('posts:groups', args=[GROUP_SLUG])
 GROUP_TITLE = 'Тестовая группа'
 GROUP_DESCRIPTION = 'Описание тестовой группы'
 POST_TEXT = 'Тестовый Текст'
-COMMENT_TEXT = 'Тестовый Текст Комментария'
 FOLLOW_URL = reverse('posts:profile_follow', args=[USERNAME])
 UNFOLLOW_URL = reverse('posts:profile_unfollow', args=[USERNAME])
 
@@ -56,21 +54,16 @@ class PostURLTests(TestCase):
         cls.POST_EDIT_URL = reverse('posts:post_edit', args=[
             cls.post.id,
         ])
-        cls.ADD_COMMENT_URL = reverse('posts:add_comment', args=[
-            cls.post.id,
-        ])
+        cls.guest_client = Client()
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
+        cls.not_author_client = Client()
+        cls.not_author_client.force_login(cls.user_not_author)
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
-
-    def setUp(self):
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
-        self.not_author_client = Client()
-        self.not_author_client.force_login(self.user_not_author)
 
     def test_urls_exist_at_desired_location(self):
         client_urls = [
@@ -78,15 +71,19 @@ class PostURLTests(TestCase):
             [PROFILE_URL, self.guest_client, 200],
             [GROUP_URL, self.guest_client, 200],
             [self.POST_DETAIL_URL, self.guest_client, 200],
-            [LOGIN_URL, self.guest_client, 200],
-            [SIGNUP_URL, self.guest_client, 200],
             [CREATE_POST_URL, self.authorized_client, 200],
             [self.POST_EDIT_URL, self.authorized_client, 200],
             [CREATE_POST_URL, self.guest_client, 302],
             [self.POST_EDIT_URL, self.guest_client, 302],
             [self.POST_EDIT_URL, self.not_author_client, 302],
             [UNEXPECTED_URL, self.guest_client, 404],
-            [FOLLOW_INDEX_URL, self.authorized_client, 200]
+            [FOLLOW_INDEX_URL, self.authorized_client, 200],
+            [FOLLOW_INDEX_URL, self.not_author_client, 200],
+            [FOLLOW_INDEX_URL, self.guest_client, 302],
+            [FOLLOW_URL, self.not_author_client, 302],
+            [FOLLOW_URL, self.guest_client, 302],
+            [UNFOLLOW_URL, self.not_author_client, 302],
+            [UNFOLLOW_URL, self.guest_client, 302]
         ]
         for url, client, code in client_urls:
             with self.subTest(url=url):
@@ -99,12 +96,12 @@ class PostURLTests(TestCase):
             [self.POST_EDIT_URL, self.guest_client,
                 f'{LOGIN_URL}?next={self.POST_EDIT_URL}'],
             [self.POST_EDIT_URL, self.not_author_client, self.POST_DETAIL_URL],
-            [self.ADD_COMMENT_URL, self.guest_client,
-                f'{LOGIN_URL}?next={self.ADD_COMMENT_URL}'],
             [FOLLOW_URL, self.guest_client,
                 f'{LOGIN_URL}?next={FOLLOW_URL}'],
             [UNFOLLOW_URL, self.guest_client,
                 f'{LOGIN_URL}?next={UNFOLLOW_URL}'],
+            [FOLLOW_INDEX_URL, self.guest_client,
+                f'{LOGIN_URL}?next={FOLLOW_INDEX_URL}'],
         ]
         for url, client, redirect in client_urls:
             with self.subTest(url=url):

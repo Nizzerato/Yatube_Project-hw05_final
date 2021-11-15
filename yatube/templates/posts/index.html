@@ -8,10 +8,7 @@
   {% cache 20 index_page %}
     <div class="container">
       {% for post in page_obj %}
-        {% include 'includes/post_list.html' %}
-        {% if post.group %}
-          <a href="{% url 'posts:groups' post.group.slug %}">#{{ post.group.title }}</a>
-        {% endif %}
+        {% include 'posts/includes/post_item.html' %}
         {% if not forloop.last %}<hr>{% endif %}
       {% endfor %}
       {% include 'includes/paginator.html' %}

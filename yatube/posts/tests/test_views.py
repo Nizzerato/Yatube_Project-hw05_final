@@ -78,6 +78,11 @@ class PostPagesTests(TestCase):
         cls.POST_EDIT_URL = reverse('posts:post_edit', args=[
             cls.post.id,
         ])
+        cls.guest_client = Client()
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
+        cls.not_author_client = Client()
+        cls.not_author_client.force_login(cls.user_not_author)
 
     @classmethod
     def tearDownClass(cls):
@@ -85,12 +90,6 @@ class PostPagesTests(TestCase):
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
-        self.not_author_client = Client()
-        self.not_author_client.force_login(self.user_not_author)
-        Follow.objects.all().delete()
         cache.clear()
 
     def test_list_pages_show_correct_context(self):
@@ -118,16 +117,19 @@ class PostPagesTests(TestCase):
                 self.assertEqual(post_0.text, self.post.text)
                 self.assertEqual(post_0.author, self.post.author)
                 self.assertEqual(post_0.group, self.group)
-                self.assertEqual(post_0.group.title, self.group.title)
-                self.assertEqual(post_0.group.slug, self.group.slug)
-                self.assertEqual(
-                    post_0.group.description, self.group.description
-                )
                 self.assertEqual(post_0.image, self.post.image)
 
     def test_group_2_has_zero_posts(self):
         response = self.client.get(GROUP2_URL)
         self.assertNotIn(self.post, response.context.get('page_obj'))
+
+    def test_follow_index_page_has_post(self):
+        Follow.objects.create(
+            user=self.user_not_author,
+            author=self.user,
+        )
+        response = self.not_author_client.get(FOLLOW_INDEX_URL)
+        self.assertIn(self.post, response.context.get('page_obj'))
 
     def test_homepage_cache(self):
         response_1 = self.guest_client.get(HOMEPAGE_URL)
@@ -139,10 +141,15 @@ class PostPagesTests(TestCase):
         self.assertNotEqual(response_1.content, response_3.content)
 
     def test_follow_author(self):
+        follow_count = Follow.objects.all().count()
         self.not_author_client.get(FOLLOW_URL)
-        self.assertEqual(Follow.objects.all().count(), 1)
-        self.assertEqual(Follow.objects.all()[0].user, self.user_not_author)
-        self.assertEqual(Follow.objects.all()[0].author, self.user)
+        self.assertEqual(Follow.objects.all().count(), follow_count + 1)
+        self.assertTrue(Follow.objects.filter(
+            user=self.user_not_author,
+            author=self.user,
+        ).exists())
+        self.not_author_client.get(FOLLOW_URL)
+        self.assertEqual(Follow.objects.all().count(), follow_count + 1)
 
     def test_unfollow_author(self):
         Follow.objects.create(
@@ -150,9 +157,17 @@ class PostPagesTests(TestCase):
             author=self.user,
         )
         self.not_author_client.get(UNFOLLOW_URL)
-        response = self.not_author_client.get(FOLLOW_INDEX_URL)
-        self.assertEqual(len(response.context['page_obj']), 0)
-        self.assertEqual(Follow.objects.count(), 0)
+        self.assertFalse(Follow.objects.filter(
+            user=self.user_not_author,
+            author=self.user,
+        ).exists())
+
+    def test_self_follow(self):
+        self.authorized_client.get(FOLLOW_URL)
+        self.assertFalse(Follow.objects.filter(
+            user=self.user,
+            author=self.user,
+        ).exists())
 
 
 class PaginatorViewsTest(TestCase):

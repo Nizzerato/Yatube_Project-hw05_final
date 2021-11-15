@@ -10,7 +10,7 @@
       <p>Подпишитесь на интересных вам авторов чтобы следить за их новыми записями на этой странице.</p>
     {% endif %}
     {% for post in page_obj %}
-      {% include 'includes/post_list.html' with post=post %}
+      {% include 'posts/includes/post_item.html' %}
       {% if not forloop.last %}<hr>{% endif %}
     {% endfor %}
     {% include 'includes/paginator.html' %}

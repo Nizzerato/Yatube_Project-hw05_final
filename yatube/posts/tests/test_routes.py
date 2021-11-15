@@ -22,9 +22,12 @@ class RoutesURLTests(TestCase):
             [f'/group/{GROUP_SLUG}/', 'groups', [GROUP_SLUG]],
             [f'/profile/{USERNAME}/', 'profile', [USERNAME]],
             [f'/posts/{self.post.id}/', 'post_detail', [self.post.id]],
-            [f'/posts/{self.post.id}/edit/', 'post_edit', [self.post.id]]
+            [f'/posts/{self.post.id}/edit/', 'post_edit', [self.post.id]],
+            [f'/posts/{self.post.id}/comment/', 'add_comment', [self.post.id]],
+            ['/follow/', 'follow_index', ''],
+            [f'/profile/{USERNAME}/follow/', 'profile_follow', [USERNAME]],
+            [f'/profile/{USERNAME}/unfollow/', 'profile_unfollow', [USERNAME]]
         ]
         for url, route, arg in urls:
-            routed_url = reverse('posts:' + route, args=arg)
             with self.subTest(url=url):
-                self.assertEqual(url, routed_url)
+                self.assertEqual(url, reverse('posts:' + route, args=arg))
