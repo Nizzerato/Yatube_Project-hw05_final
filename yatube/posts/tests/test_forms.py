@@ -64,6 +64,7 @@ class PostFormTests(TestCase):
         cls.post = Post.objects.create(
             author=cls.user,
             text=POST_TEXT,
+            group=cls.group,
         )
         cls.POST_DETAIL_URL = reverse('posts:post_detail', args=[
             cls.post.id,
@@ -208,21 +209,15 @@ class PostFormTests(TestCase):
                              f'{LOGIN_URL}?next={CREATE_POST_URL}')
 
     def test_anonym_or_not_author_edit_post(self):
-        Post.objects.all().delete()
-        Group.objects.all().delete()
-        self.group = Group.objects.create(
-            title=GROUP_TITLE,
-            description=GROUP_DESCRIPTION,
-            slug=GROUP_SLUG,
-        )
-        self.post = Post.objects.create(
-            author=self.user,
-            text=POST_TEXT,
-            group=self.group,
+        image2 = SimpleUploadedFile(
+            name='small2.gif',
+            content=SMALL_GIF,
+            content_type='image/gif',
         )
         form_data = {
             'text': 'Тестовый Текст Анонима',
             'group': self.group_2.id,
+            'image': image2,
         }
         edit_responses = [
             [self.POST_EDIT_URL, self.guest,
@@ -233,8 +228,9 @@ class PostFormTests(TestCase):
         for url, client, redirect in edit_responses:
             with self.subTest(url=url, client=client):
                 response = self.client.post(url, data=form_data, follow=True)
-                post = Post.objects.all()[0]
+                post = self.client.get(self.POST_DETAIL_URL).context['post']
                 self.assertRedirects(response, redirect)
-                self.assertEqual(post.text, POST_TEXT)
-                self.assertEqual(post.author, self.user)
-                self.assertEqual(post.group, self.group)
+                self.assertEqual(post.text, self.post.text)
+                self.assertEqual(post.author, self.post.author)
+                self.assertEqual(post.group_id, self.post.group_id)
+                self.assertEqual(post.image, self.post.image)

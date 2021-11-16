@@ -112,18 +112,10 @@ class PostURLTests(TestCase):
             [HOMEPAGE_URL, self.guest, 'posts/index.html'],
             [GROUP_URL, self.guest, 'posts/group_list.html'],
             [PROFILE_URL, self.guest, 'posts/profile.html'],
-            [self.POST_DETAIL_URL,
-                self.guest,
-                'posts/post_detail.html'],
-            [CREATE_POST_URL,
-                self.author,
-                'posts/create_post.html'],
-            [self.POST_EDIT_URL,
-                self.author,
-                'posts/create_post.html'],
-            [FOLLOW_INDEX_URL,
-                self.author,
-                'posts/follow.html'],
+            [self.POST_DETAIL_URL, self.guest, 'posts/post_detail.html'],
+            [CREATE_POST_URL, self.author, 'posts/create_post.html'],
+            [self.POST_EDIT_URL, self.author, 'posts/create_post.html'],
+            [FOLLOW_INDEX_URL, self.author, 'posts/follow.html'],
         ]
         for url, client, template in template_url_names:
             with self.subTest(url=url):
