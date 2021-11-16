@@ -22,17 +22,18 @@ def group_posts(request, slug):
     return render(request, 'posts/group_list.html', {
         'group': group,
         'page_obj': paginate(group.posts.all(), request),
+        'show_group': True,
     })
 
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    following = request.user.is_authenticated and Follow.objects.filter(
-        user=request.user, author=author).exists()
+    if request.user.is_authenticated:
+        Follow.objects.filter(user=request.user, author=author).exists()
     return render(request, 'posts/profile.html', {
         'author': author,
         'page_obj': paginate(author.posts.all(), request, PROFILE_POSTS),
-        'following': following,
+        'following': Follow.objects.all(),
     })
 
 
@@ -41,7 +42,7 @@ def post_detail(request, post_id, form=None):
     return render(request, 'posts/post_detail.html', {
         'post': post,
         'form': CommentForm(request.POST or None),
-        'is_post_detail': True
+        'switched_to_post_detail': True
     })
 
 

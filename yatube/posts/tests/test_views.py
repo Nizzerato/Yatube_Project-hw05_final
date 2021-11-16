@@ -78,11 +78,11 @@ class PostPagesTests(TestCase):
         cls.POST_EDIT_URL = reverse('posts:post_edit', args=[
             cls.post.id,
         ])
-        cls.guest_client = Client()
-        cls.authorized_client = Client()
-        cls.authorized_client.force_login(cls.user)
-        cls.not_author_client = Client()
-        cls.not_author_client.force_login(cls.user_not_author)
+        cls.guest = Client()
+        cls.author = Client()
+        cls.author.force_login(cls.user)
+        cls.another = Client()
+        cls.another.force_login(cls.user_not_author)
 
     @classmethod
     def tearDownClass(cls):
@@ -106,7 +106,7 @@ class PostPagesTests(TestCase):
         }
         for views_name, url in responses.items():
             with self.subTest(views_name=views_name):
-                response = self.not_author_client.get(url)
+                response = self.another.get(url)
                 if 'page_obj' in response.context:
                     page = response.context['page_obj']
                     self.assertEqual(len(page), 1)
@@ -123,47 +123,50 @@ class PostPagesTests(TestCase):
         response = self.client.get(GROUP2_URL)
         self.assertNotIn(self.post, response.context.get('page_obj'))
 
-    def test_follow_index_page_has_post(self):
-        Follow.objects.create(
-            user=self.user_not_author,
-            author=self.user,
-        )
-        response = self.not_author_client.get(FOLLOW_INDEX_URL)
-        self.assertIn(self.post, response.context.get('page_obj'))
-
     def test_homepage_cache(self):
-        response_1 = self.guest_client.get(HOMEPAGE_URL)
+        response_1 = self.guest.get(HOMEPAGE_URL)
         Post.objects.all().delete()
-        response_2 = self.guest_client.get(HOMEPAGE_URL)
+        response_2 = self.guest.get(HOMEPAGE_URL)
         self.assertEqual(response_1.content, response_2.content)
         cache.clear()
-        response_3 = self.guest_client.get(HOMEPAGE_URL)
+        response_3 = self.guest.get(HOMEPAGE_URL)
         self.assertNotEqual(response_1.content, response_3.content)
 
     def test_follow_author(self):
         follow_count = Follow.objects.all().count()
-        self.not_author_client.get(FOLLOW_URL)
+        self.another.get(FOLLOW_URL)
         self.assertEqual(Follow.objects.all().count(), follow_count + 1)
         self.assertTrue(Follow.objects.filter(
             user=self.user_not_author,
             author=self.user,
         ).exists())
-        self.not_author_client.get(FOLLOW_URL)
-        self.assertEqual(Follow.objects.all().count(), follow_count + 1)
+
+    def test_follow_author_second_time(self):
+        Follow.objects.create(
+            user=self.user_not_author,
+            author=self.user,
+        )
+        follow_count = Follow.objects.all().count()
+        self.another.get(FOLLOW_URL)
+        self.assertEqual(Follow.objects.all().count(), follow_count)
+        self.assertTrue(Follow.objects.filter(
+            user=self.user_not_author,
+            author=self.user,
+        ).exists())
 
     def test_unfollow_author(self):
         Follow.objects.create(
             user=self.user_not_author,
             author=self.user,
         )
-        self.not_author_client.get(UNFOLLOW_URL)
+        self.another.get(UNFOLLOW_URL)
         self.assertFalse(Follow.objects.filter(
             user=self.user_not_author,
             author=self.user,
         ).exists())
 
     def test_self_follow(self):
-        self.authorized_client.get(FOLLOW_URL)
+        self.author.get(FOLLOW_URL)
         self.assertFalse(Follow.objects.filter(
             user=self.user,
             author=self.user,

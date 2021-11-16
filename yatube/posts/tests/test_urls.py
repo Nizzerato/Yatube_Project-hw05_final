@@ -54,11 +54,11 @@ class PostURLTests(TestCase):
         cls.POST_EDIT_URL = reverse('posts:post_edit', args=[
             cls.post.id,
         ])
-        cls.guest_client = Client()
-        cls.authorized_client = Client()
-        cls.authorized_client.force_login(cls.user)
-        cls.not_author_client = Client()
-        cls.not_author_client.force_login(cls.user_not_author)
+        cls.guest = Client()
+        cls.author = Client()
+        cls.author.force_login(cls.user)
+        cls.another = Client()
+        cls.another.force_login(cls.user_not_author)
 
     @classmethod
     def tearDownClass(cls):
@@ -67,63 +67,62 @@ class PostURLTests(TestCase):
 
     def test_urls_exist_at_desired_location(self):
         client_urls = [
-            [HOMEPAGE_URL, self.guest_client, 200],
-            [PROFILE_URL, self.guest_client, 200],
-            [GROUP_URL, self.guest_client, 200],
-            [self.POST_DETAIL_URL, self.guest_client, 200],
-            [CREATE_POST_URL, self.authorized_client, 200],
-            [self.POST_EDIT_URL, self.authorized_client, 200],
-            [CREATE_POST_URL, self.guest_client, 302],
-            [self.POST_EDIT_URL, self.guest_client, 302],
-            [self.POST_EDIT_URL, self.not_author_client, 302],
-            [UNEXPECTED_URL, self.guest_client, 404],
-            [FOLLOW_INDEX_URL, self.authorized_client, 200],
-            [FOLLOW_INDEX_URL, self.not_author_client, 200],
-            [FOLLOW_INDEX_URL, self.guest_client, 302],
-            [FOLLOW_URL, self.not_author_client, 302],
-            [FOLLOW_URL, self.guest_client, 302],
-            [UNFOLLOW_URL, self.not_author_client, 302],
-            [UNFOLLOW_URL, self.guest_client, 302]
+            [HOMEPAGE_URL, self.guest, 200],
+            [PROFILE_URL, self.guest, 200],
+            [GROUP_URL, self.guest, 200],
+            [self.POST_DETAIL_URL, self.guest, 200],
+            [CREATE_POST_URL, self.author, 200],
+            [self.POST_EDIT_URL, self.author, 200],
+            [CREATE_POST_URL, self.guest, 302],
+            [self.POST_EDIT_URL, self.guest, 302],
+            [self.POST_EDIT_URL, self.another, 302],
+            [UNEXPECTED_URL, self.guest, 404],
+            [FOLLOW_INDEX_URL, self.author, 200],
+            [FOLLOW_INDEX_URL, self.another, 200],
+            [FOLLOW_INDEX_URL, self.guest, 302],
+            [FOLLOW_URL, self.another, 302],
+            [FOLLOW_URL, self.guest, 302],
+            [UNFOLLOW_URL, self.another, 302],
+            [UNFOLLOW_URL, self.guest, 302]
         ]
         for url, client, code in client_urls:
-            with self.subTest(url=url):
+            with self.subTest(url=url, client=client, code=code):
                 self.assertEqual(client.get(url).status_code, code)
 
     def test_urls_redirects_anonym(self):
         client_urls = [
-            [CREATE_POST_URL, self.guest_client,
+            [CREATE_POST_URL, self.guest,
                 f'{LOGIN_URL}?next={CREATE_POST_URL}'],
-            [self.POST_EDIT_URL, self.guest_client,
+            [self.POST_EDIT_URL, self.guest,
                 f'{LOGIN_URL}?next={self.POST_EDIT_URL}'],
-            [self.POST_EDIT_URL, self.not_author_client, self.POST_DETAIL_URL],
-            [FOLLOW_URL, self.guest_client,
+            [self.POST_EDIT_URL, self.another, self.POST_DETAIL_URL],
+            [FOLLOW_URL, self.guest,
                 f'{LOGIN_URL}?next={FOLLOW_URL}'],
-            [UNFOLLOW_URL, self.guest_client,
+            [UNFOLLOW_URL, self.guest,
                 f'{LOGIN_URL}?next={UNFOLLOW_URL}'],
-            [FOLLOW_INDEX_URL, self.guest_client,
+            [FOLLOW_INDEX_URL, self.guest,
                 f'{LOGIN_URL}?next={FOLLOW_INDEX_URL}'],
         ]
         for url, client, redirect in client_urls:
-            with self.subTest(url=url):
-                response = client.get(url, follow=False)
-                self.assertRedirects(response, redirect)
+            with self.subTest(url=url, client=client, redirect=redirect):
+                self.assertRedirects(client.get(url, follow=False), redirect)
 
     def test_urls_use_correct_templates(self):
         template_url_names = [
-            [HOMEPAGE_URL, self.guest_client, 'posts/index.html'],
-            [GROUP_URL, self.guest_client, 'posts/group_list.html'],
-            [PROFILE_URL, self.guest_client, 'posts/profile.html'],
+            [HOMEPAGE_URL, self.guest, 'posts/index.html'],
+            [GROUP_URL, self.guest, 'posts/group_list.html'],
+            [PROFILE_URL, self.guest, 'posts/profile.html'],
             [self.POST_DETAIL_URL,
-                self.guest_client,
+                self.guest,
                 'posts/post_detail.html'],
             [CREATE_POST_URL,
-                self.authorized_client,
+                self.author,
                 'posts/create_post.html'],
             [self.POST_EDIT_URL,
-                self.authorized_client,
+                self.author,
                 'posts/create_post.html'],
             [FOLLOW_INDEX_URL,
-                self.authorized_client,
+                self.author,
                 'posts/follow.html'],
         ]
         for url, client, template in template_url_names:

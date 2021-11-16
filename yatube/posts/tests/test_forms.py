@@ -74,11 +74,11 @@ class PostFormTests(TestCase):
         cls.ADD_COMMENT_URL = reverse('posts:add_comment', args=[
             cls.post.id,
         ])
-        cls.guest_client = Client()
-        cls.authorized_client = Client()
-        cls.authorized_client.force_login(cls.user)
-        cls.not_author_client = Client()
-        cls.not_author_client.force_login(cls.user_not_author)
+        cls.guest = Client()
+        cls.author = Client()
+        cls.author.force_login(cls.user)
+        cls.another = Client()
+        cls.another.force_login(cls.user_not_author)
         cls.form = PostForm()
 
     @classmethod
@@ -101,7 +101,7 @@ class PostFormTests(TestCase):
             'group': self.group.id,
             'image': image,
         }
-        response = self.authorized_client.post(
+        response = self.author.post(
             CREATE_POST_URL,
             data=form_data,
             follow=True
@@ -126,7 +126,7 @@ class PostFormTests(TestCase):
             'group': self.group_2.id,
             'image': image2,
         }
-        response = self.authorized_client.post(
+        response = self.author.post(
             self.POST_EDIT_URL,
             data=form_data,
             follow=True
@@ -135,7 +135,7 @@ class PostFormTests(TestCase):
         self.assertRedirects(response, self.POST_DETAIL_URL)
         self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.group_id, form_data['group'])
-        self.assertNotEqual(post.author, self.user_not_author)
+        self.assertEqual(post.author, self.user)
         self.assertEqual(post.image, f"posts/{form_data['image']}")
 
     def test_create_or_edit_post_pages_show_correct_context(self):
@@ -150,7 +150,7 @@ class PostFormTests(TestCase):
         }
         for views_name, url in responses.items():
             for value, expected in form_fields.items():
-                response = self.authorized_client.get(url)
+                response = self.author.get(url)
                 with self.subTest(views_name=views_name):
                     form_field = response.context['form'].fields.get(value)
                     self.assertIsInstance(form_field, expected)
@@ -160,71 +160,81 @@ class PostFormTests(TestCase):
         form_data = {
             'text': COMMENT_TEXT,
         }
-        response = self.authorized_client.post(
+        response = self.author.post(
             self.ADD_COMMENT_URL,
             data=form_data,
             follow=True
         )
         comment = Comment.objects.all()[0]
+        self.assertEqual(Comment.objects.all().count(), 1)
         self.assertRedirects(response, self.POST_DETAIL_URL)
         self.assertEqual(comment.text, form_data['text'])
         self.assertEqual(comment.post, self.post)
         self.assertEqual(comment.author, self.user)
 
-    def test_anonym_create_post_or_comment(self):
+    def test_anonym_create_comment(self):
         Comment.objects.all().delete()
+        comment_form_data = {
+            'text': 'anonym text'
+        }
+        comment_response = self.guest.post(
+            self.ADD_COMMENT_URL,
+            data=comment_form_data,
+            follow=True
+        )
+        self.assertEqual(Comment.objects.all().count(), 0)
+        self.assertRedirects(comment_response,
+                             f'{LOGIN_URL}?next={self.ADD_COMMENT_URL}')
+
+    def test_anonym_create_post(self):
         Post.objects.all().delete()
         image = SimpleUploadedFile(
             name='small.gif',
             content=SMALL_GIF,
             content_type='image/gif',
         )
-        comment_form_data = {
-            'text': 'anonym text'
-        }
-        comment_response = self.guest_client.post(
-            self.ADD_COMMENT_URL,
-            data=comment_form_data,
-            follow=True
-        )
         post_form_data = {
             'text': POST_TEXT,
             'group': self.group.id,
             'image': image,
         }
-        post_response = self.guest_client.post(
+        post_response = self.guest.post(
             CREATE_POST_URL,
             data=post_form_data,
             follow=True
         )
-        self.assertEqual(Comment.objects.all().count(), 0)
         self.assertEqual(Post.objects.all().count(), 0)
-        self.assertRedirects(comment_response,
-                             f'{LOGIN_URL}?next={self.ADD_COMMENT_URL}')
         self.assertRedirects(post_response,
                              f'{LOGIN_URL}?next={CREATE_POST_URL}')
 
     def test_anonym_or_not_author_edit_post(self):
-        image2 = SimpleUploadedFile(
-            name='small2.gif',
-            content=SMALL_GIF,
-            content_type='image/gif',
+        Post.objects.all().delete()
+        Group.objects.all().delete()
+        self.group = Group.objects.create(
+            title=GROUP_TITLE,
+            description=GROUP_DESCRIPTION,
+            slug=GROUP_SLUG,
+        )
+        self.post = Post.objects.create(
+            author=self.user,
+            text=POST_TEXT,
+            group=self.group,
         )
         form_data = {
             'text': 'Тестовый Текст Анонима',
             'group': self.group_2.id,
-            'image': image2,
         }
-        anonym_response = self.guest_client.post(
-            self.POST_EDIT_URL,
-            data=form_data,
-            follow=True
-        )
-        not_author_response = self.not_author_client.post(
-            self.POST_EDIT_URL,
-            data=form_data,
-            follow=True
-        )
-        self.assertRedirects(anonym_response,
-                             f'{LOGIN_URL}?next={self.POST_EDIT_URL}')
-        self.assertRedirects(not_author_response, self.POST_DETAIL_URL)
+        edit_responses = [
+            [self.POST_EDIT_URL, self.guest,
+                f'{LOGIN_URL}?next={self.POST_EDIT_URL}'],
+            [self.POST_EDIT_URL, self.another,
+                f'{LOGIN_URL}?next={self.POST_EDIT_URL}'],
+        ]
+        for url, client, redirect in edit_responses:
+            with self.subTest(url=url, client=client):
+                response = self.client.post(url, data=form_data, follow=True)
+                post = Post.objects.all()[0]
+                self.assertRedirects(response, redirect)
+                self.assertEqual(post.text, POST_TEXT)
+                self.assertEqual(post.author, self.user)
+                self.assertEqual(post.group, self.group)
