@@ -22,7 +22,6 @@ def group_posts(request, slug):
     return render(request, 'posts/group_list.html', {
         'group': group,
         'page_obj': paginate(group.posts.all(), request),
-        'hide_group': True,
     })
 
 

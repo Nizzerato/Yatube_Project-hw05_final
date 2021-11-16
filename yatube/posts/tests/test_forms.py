@@ -228,9 +228,9 @@ class PostFormTests(TestCase):
         for url, client, redirect in edit_responses:
             with self.subTest(url=url, client=client):
                 response = self.client.post(url, data=form_data, follow=True)
-                post = self.client.get(self.POST_DETAIL_URL).context['post']
+                self.assertFalse(Post.objects.filter(
+                    text=form_data['text'],
+                    group=form_data['group'],
+                    image=form_data['image'],
+                ).exists())
                 self.assertRedirects(response, redirect)
-                self.assertEqual(post.text, self.post.text)
-                self.assertEqual(post.author, self.post.author)
-                self.assertEqual(post.group_id, self.post.group_id)
-                self.assertEqual(post.image, self.post.image)

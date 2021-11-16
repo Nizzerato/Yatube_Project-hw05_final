@@ -7,8 +7,7 @@
   <div class="container">
     <p>{{ group.description|linebreaksbr }}</p>
     {% for post in page_obj %}
-      <hide_group>
-      {% include 'posts/includes/post_item.html' %}
+      {% include 'posts/includes/post_item.html' with hide_group=True %}
       {% if not forloop.last %}<hr>{% endif %}
     {% endfor %}
     {% include 'includes/paginator.html' %}
