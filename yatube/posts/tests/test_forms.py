@@ -230,8 +230,8 @@ class PostFormTests(TestCase):
                 response = self.client.post(url, data=form_data, follow=True)
                 post = Post.objects.filter(id=self.post.id)[0]
                 self.assertEqual(Post.objects.count(), 1)
-                self.assertEqual(post.text, self.post.text) 
-                self.assertEqual(post.author, self.post.author) 
-                self.assertEqual(post.group_id, self.post.group_id) 
+                self.assertEqual(post.text, self.post.text)
+                self.assertEqual(post.author, self.post.author)
+                self.assertEqual(post.group_id, self.post.group_id)
                 self.assertEqual(post.image, self.post.image)
                 self.assertRedirects(response, redirect)
