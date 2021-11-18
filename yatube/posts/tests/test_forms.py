@@ -175,16 +175,16 @@ class PostFormTests(TestCase):
 
     def test_anonym_create_comment(self):
         Comment.objects.all().delete()
-        comment_form_data = {
+        form_data = {
             'text': 'anonym text'
         }
-        comment_response = self.guest.post(
+        response = self.guest.post(
             self.ADD_COMMENT_URL,
-            data=comment_form_data,
+            data=form_data,
             follow=True
         )
         self.assertEqual(Comment.objects.all().count(), 0)
-        self.assertRedirects(comment_response,
+        self.assertRedirects(response,
                              f'{LOGIN_URL}?next={self.ADD_COMMENT_URL}')
 
     def test_anonym_create_post(self):
@@ -194,18 +194,18 @@ class PostFormTests(TestCase):
             content=SMALL_GIF,
             content_type='image/gif',
         )
-        post_form_data = {
+        form_data = {
             'text': POST_TEXT,
             'group': self.group.id,
             'image': image,
         }
-        post_response = self.guest.post(
+        response = self.guest.post(
             CREATE_POST_URL,
-            data=post_form_data,
+            data=form_data,
             follow=True
         )
         self.assertEqual(Post.objects.all().count(), 0)
-        self.assertRedirects(post_response,
+        self.assertRedirects(response,
                              f'{LOGIN_URL}?next={CREATE_POST_URL}')
 
     def test_anonym_or_not_author_edit_post(self):
@@ -228,9 +228,10 @@ class PostFormTests(TestCase):
         for url, client, redirect in edit_responses:
             with self.subTest(url=url, client=client):
                 response = self.client.post(url, data=form_data, follow=True)
-                self.assertFalse(Post.objects.filter(
-                    text=form_data['text'],
-                    group=form_data['group'],
-                    image=form_data['image'],
-                ).exists())
+                post = Post.objects.filter(id=self.post.id)[0]
+                self.assertEqual(Post.objects.count(), 1)
+                self.assertEqual(post.text, self.post.text) 
+                self.assertEqual(post.author, self.post.author) 
+                self.assertEqual(post.group_id, self.post.group_id) 
+                self.assertEqual(post.image, self.post.image)
                 self.assertRedirects(response, redirect)
