@@ -228,7 +228,7 @@ class PostFormTests(TestCase):
         for url, client, redirect in edit_responses:
             with self.subTest(url=url, client=client):
                 response = self.client.post(url, data=form_data, follow=True)
-                post = Post.objects.filter(id=self.post.id)[0]
+                post = Post.objects.get(id=self.post.id)
                 self.assertEqual(Post.objects.count(), 1)
                 self.assertEqual(post.text, self.post.text)
                 self.assertEqual(post.author, self.post.author)
