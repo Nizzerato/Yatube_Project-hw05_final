@@ -1,16 +1,4 @@
 import os
-import sentry_sdk
-from dotenv import load_dotenv
-from sentry_sdk.integrations.django import DjangoIntegration
-
-
-load_dotenv()
-
-
-sentry_sdk.init(
-    dsn='https://42119f5248414dadbece89d2bea8f81f@o1259295.ingest.sentry.io/6433834',
-    integrations=[DjangoIntegration()],
-)
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,11 +13,7 @@ CSRF_FAILURE_VIEW = 'core.views.permission_denied_view'
 
 ALLOWED_HOSTS = [
     '0.0.0.0',
-    '51.250.101.1',
-    'firsttrymarki.ddns.net',
-    'www.nizzerato.pythonanywhere.com',
-    'nizzerato.pythonanywhere.com'
-    'testserver',
+    '51.250.106.124',
     '127.0.0.1',
     'localhost',
     '[::1]',
@@ -91,12 +75,8 @@ WSGI_APPLICATION = 'yatube.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.getenv('DB_NAME'),
-	'USER': os.getenv('POSTGRES_USER'),
-	'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-	'HOST': os.getenv('DB_HOST'),
-	'PORT': os.getenv('DB_PORT')
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
@@ -129,7 +109,7 @@ USE_TZ = True
 
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 
 LOGIN_URL = 'users:login'
